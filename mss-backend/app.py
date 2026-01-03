@@ -4,6 +4,10 @@ import os
 import json
 from dotenv import load_dotenv
 from groq import Groq
+from docx import Document
+from docx.shared import Pt, RGBColor, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from io import BytesIO
 
 # Backend Classes
 from pdf_processor import PDFProcessor
@@ -14,7 +18,140 @@ from credit_memo_generator import CreditMemoGenerator
 # Load environment variables
 load_dotenv()
 
-def main():
+
+def generate_markdown_summary(memo):
+    """Convert memo to markdown format."""
+    sections = memo.get("sections", {})
+    markdown = f"# Credit Memo Report\n\n"
+    markdown += f"**Document Type:** {memo.get('document_type', 'N/A')}\n"
+    markdown += f"**Confidence Level:** {memo.get('confidence_level', 'Draft')}\n\n"
+    
+    # Executive Summary
+    markdown += "## 1. Executive Summary\n\n"
+    exec_sum = sections.get("executive_summary", {})
+    for item in exec_sum.get("highlights", []):
+        point = item.get("point", "")
+        attr = item.get("attribute", "")
+        sources = item.get("sources", [])
+        source_str = f" _(Pages: {', '.join(map(str, sources))})_" if sources else ""
+        markdown += f"- **{attr}:** {point}{source_str}\n"
+    
+    markdown += "\n## 2. Key Financial Metrics\n\n"
+    fin_metrics = sections.get("financial_metrics", {})
+    for m in fin_metrics.get("metrics", []):
+        name = m.get("name", "")
+        value = m.get("value", "N/A")
+        confidence = m.get("confidence", "")
+        markdown += f"- **{name}:** {value} ({confidence})\n"
+    
+    markdown += "\n## 3. Risk Assessment\n\n"
+    risks = sections.get("risks", {})
+    for risk in risks.get("items", []):
+        title = risk.get("risk_title", "")
+        severity = risk.get("severity", "")
+        desc = risk.get("description", "")
+        markdown += f"### {title} ({severity})\n{desc}\n\n"
+    
+    markdown += "\n## 4. Final Recommendation\n\n"
+    rec = sections.get("recommendation", {})
+    stance = rec.get("stance", "")
+    summary = rec.get("summary", "")
+    markdown += f"**Stance:** {stance}\n\n{summary}\n\n"
+    markdown += "**Justification:**\n"
+    for j in rec.get("justification", []):
+        markdown += f"- {j.get('point', '')}\n"
+    
+    return markdown
+
+
+def generate_word_document(memo):
+    """Convert memo to Word document format."""
+    doc = Document()
+    
+    # Title
+    title = doc.add_heading('Credit Memo Report', 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    # Metadata
+    doc.add_paragraph(f"Document Type: {memo.get('document_type', 'N/A')}")
+    doc.add_paragraph(f"Confidence Level: {memo.get('confidence_level', 'Draft')}")
+    doc.add_paragraph()
+    
+    sections = memo.get("sections", {})
+    
+    # Executive Summary
+    doc.add_heading('1. Executive Summary', level=1)
+    exec_sum = sections.get("executive_summary", {})
+    for item in exec_sum.get("highlights", []):
+        point = item.get("point", "")
+        attr = item.get("attribute", "")
+        sources = item.get("sources", [])
+        source_str = f" (Pages: {', '.join(map(str, sources))})" if sources else ""
+        p = doc.add_paragraph(f"{attr}: {point}{source_str}", style='List Bullet')
+    
+    # Key Financial Metrics
+    doc.add_heading('2. Key Financial Metrics', level=1)
+    fin_metrics = sections.get("financial_metrics", {})
+    table = doc.add_table(rows=1, cols=3)
+    table.style = 'Light Grid Accent 1'
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = 'Metric'
+    hdr_cells[1].text = 'Value'
+    hdr_cells[2].text = 'Confidence'
+    
+    for m in fin_metrics.get("metrics", []):
+        row_cells = table.add_row().cells
+        row_cells[0].text = m.get("name", "")
+        row_cells[1].text = str(m.get("value", "N/A"))
+        row_cells[2].text = m.get("confidence", "")
+    
+    # Risk Assessment
+    doc.add_heading('3. Risk Assessment', level=1)
+    risks = sections.get("risks", {})
+    for risk in risks.get("items", []):
+        title = risk.get("risk_title", "")
+        severity = risk.get("severity", "")
+        desc = risk.get("description", "")
+        doc.add_heading(f"{title} ({severity})", level=2)
+        doc.add_paragraph(desc)
+    
+    # Recommendation
+    doc.add_heading('4. Final Recommendation', level=1)
+    rec = sections.get("recommendation", {})
+    stance = rec.get("stance", "")
+    summary = rec.get("summary", "")
+    doc.add_paragraph(f"Stance: {stance}").bold = True
+    doc.add_paragraph(summary)
+    doc.add_heading('Justification:', level=2)
+    for j in rec.get("justification", []):
+        doc.add_paragraph(j.get('point', ''), style='List Bullet')
+    
+    return doc
+
+
+def simplify_text(text, api_key):
+    """Simplify text using Groq API."""
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a professional writer. Simplify the given text while maintaining all important information. Use simpler vocabulary and shorter sentences. Make it easy to understand for non-technical readers."
+                },
+                {
+                    "role": "user",
+                    "content": f"Please simplify this text:\n\n{text}"
+                }
+            ],
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature=0.5,
+            max_tokens=2048
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error simplifying text: {str(e)}"
+
     # 1. Page Configuration
     st.set_page_config(
         page_title="Auto-Credit Memo Generator",
@@ -207,6 +344,149 @@ def main():
             st.markdown("**Basis for Recommendation:**")
             for j in rec.get("justification", []):
                 st.markdown(f"- {j.get('point', '')}")
+
+            # --- Export and Edit Section ---
+            st.divider()
+            st.markdown('<div class="section-header">📝 Edit & Export</div>', unsafe_allow_html=True)
+            
+            # Create columns for buttons and text area
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                if st.button("📄 Download as Markdown", use_container_width=True):
+                    md_content = generate_markdown_summary(memo)
+                    st.download_button(
+                        label="📥 Save Markdown",
+                        data=md_content,
+                        file_name="credit_memo.md",
+                        mime="text/markdown",
+                        use_container_width=True
+                    )
+            
+            with col2:
+                if st.button("📋 Download as Word", use_container_width=True):
+                    doc = generate_word_document(memo)
+                    doc_buffer = BytesIO()
+                    doc.save(doc_buffer)
+                    doc_buffer.seek(0)
+                    st.download_button(
+                        label="📥 Save Word",
+                        data=doc_buffer.getvalue(),
+                        file_name="credit_memo.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True
+                    )
+            
+            with col3:
+                if st.button("✨ Simplify Content", use_container_width=True):
+                    if "simplified_memo" not in st.session_state:
+                        st.session_state.simplified_memo = None
+                    
+                    with st.spinner("Simplifying content..."):
+                        # Simplify each section
+                        simplified = memo.copy()
+                        simplified_sections = {}
+                        
+                        for section_name, section_data in sections.items():
+                            if isinstance(section_data, dict):
+                                simplified_section = {}
+                                for key, value in section_data.items():
+                                    if isinstance(value, str) and len(value) > 50:
+                                        simplified_section[key] = simplify_text(value, api_key)
+                                    elif isinstance(value, list):
+                                        simplified_section[key] = value
+                                    else:
+                                        simplified_section[key] = value
+                                simplified_sections[section_name] = simplified_section
+                        
+                        simplified["sections"] = simplified_sections
+                        st.session_state.simplified_memo = simplified
+                        st.success("Content simplified! View below ⬇️")
+            
+            with col4:
+                if st.button("🔄 Reset", use_container_width=True):
+                    st.session_state.simplified_memo = None
+                    st.rerun()
+            
+            # Show simplified version if available
+            if st.session_state.get("simplified_memo"):
+                st.info("ℹ️ Showing simplified version")
+                memo = st.session_state.simplified_memo
+                sections = memo.get("sections", {})
+            
+            # Text editing area
+            st.markdown("#### ✏️ Edit Summary")
+            st.info("You can edit the generated content below and then export it.")
+            
+            # Create editable text areas for each section
+            edited_content = {}
+            
+            # Executive Summary Editor
+            with st.expander("Edit Executive Summary", expanded=False):
+                exec_sum = sections.get("executive_summary", {})
+                current_text = "\n".join([f"- {item.get('point', '')}" for item in exec_sum.get("highlights", [])])
+                edited_content["executive_summary"] = st.text_area("Executive Summary Points:", value=current_text, height=150, key="exec_edit")
+            
+            # Financial Metrics Editor
+            with st.expander("Edit Financial Metrics", expanded=False):
+                fin_metrics = sections.get("financial_metrics", {})
+                current_text = "\n".join([f"{m.get('name', '')}: {m.get('value', 'N/A')}" for m in fin_metrics.get("metrics", [])])
+                edited_content["financial_metrics"] = st.text_area("Financial Metrics:", value=current_text, height=150, key="metrics_edit")
+            
+            # Risks Editor
+            with st.expander("Edit Risk Assessment", expanded=False):
+                risks = sections.get("risks", {})
+                current_text = "\n".join([f"{risk.get('risk_title', '')} ({risk.get('severity', '')}): {risk.get('description', '')}" for risk in risks.get("items", [])])
+                edited_content["risks"] = st.text_area("Risk Assessment:", value=current_text, height=150, key="risks_edit")
+            
+            # Recommendation Editor
+            with st.expander("Edit Recommendation", expanded=False):
+                rec = sections.get("recommendation", {})
+                current_text = f"{rec.get('stance', '')}\n\n{rec.get('summary', '')}"
+                edited_content["recommendation"] = st.text_area("Recommendation:", value=current_text, height=150, key="rec_edit")
+            
+            # Export edited content
+            st.markdown("#### 📥 Export Edited Content")
+            export_col1, export_col2 = st.columns(2)
+            
+            with export_col1:
+                if st.button("Save as Markdown (with edits)", use_container_width=True):
+                    edited_md = "# Credit Memo Report (Edited)\n\n"
+                    edited_md += f"**Document Type:** {memo.get('document_type', 'N/A')}\n\n"
+                    for section_name, content in edited_content.items():
+                        if content:
+                            edited_md += f"## {section_name.replace('_', ' ').title()}\n{content}\n\n"
+                    
+                    st.download_button(
+                        label="📥 Download Edited Markdown",
+                        data=edited_md,
+                        file_name="credit_memo_edited.md",
+                        mime="text/markdown",
+                        use_container_width=True
+                    )
+            
+            with export_col2:
+                if st.button("Save as Word (with edits)", use_container_width=True):
+                    doc = Document()
+                    title = doc.add_heading('Credit Memo Report (Edited)', 0)
+                    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                    for section_name, content in edited_content.items():
+                        if content:
+                            doc.add_heading(section_name.replace('_', ' ').title(), level=1)
+                            doc.add_paragraph(content)
+                    
+                    doc_buffer = BytesIO()
+                    doc.save(doc_buffer)
+                    doc_buffer.seek(0)
+                    
+                    st.download_button(
+                        label="📥 Download Edited Word",
+                        data=doc_buffer.getvalue(),
+                        file_name="credit_memo_edited.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True
+                    )
 
             # --- Raw Data Expander ---
             with st.expander("View Raw JSON Output"):

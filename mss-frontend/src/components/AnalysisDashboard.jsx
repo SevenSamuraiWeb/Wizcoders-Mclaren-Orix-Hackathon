@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import {
     BarChart3, TrendingUp, AlertTriangle, CheckCircle,
     ArrowRight, File as FileIcon, Shield, Info,
-    ChevronDown, ChevronUp, Quote
+    ChevronDown, ChevronUp, Quote, Download, Sparkles, RotateCcw, Edit2
 } from 'lucide-react';
 import { cn } from '../utils';
+import { generateMarkdownSummary, generateWordHTML, downloadFile, downloadAsWord } from '../api';
 
 import defaultMockData from '../data/mockAnalysis.json';
 
@@ -40,9 +41,56 @@ const SourceBadge = ({ source }) => {
 
 const AnalysisDashboard = ({ data }) => {
     const [activeTab, setActiveTab] = useState('summary'); // 'summary' | '5cs' | 'financials' | 'risks'
+    const [editMode, setEditMode] = useState(false);
+    const [editedData, setEditedData] = useState({});
+    const [isExporting, setIsExporting] = useState(false);
 
     // Use passed data or fall back to mock data
     const displayData = data || defaultMockData;
+
+    const handleExportMarkdown = () => {
+        setIsExporting(true);
+        try {
+            const markdown = generateMarkdownSummary(displayData);
+            downloadFile(markdown, 'credit_memo.md', 'text/markdown');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleExportWord = () => {
+        setIsExporting(true);
+        try {
+            downloadAsWord(displayData, 'credit_memo.docx');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleEditSummary = (field, value) => {
+        setEditedData(prev => ({
+            ...prev,
+            summary: {
+                ...prev.summary,
+                [field]: value
+            }
+        }));
+    };
+
+    const handleResetEdits = () => {
+        setEditedData({});
+        setEditMode(false);
+    };
+
+    const getDisplayValue = (path, defaultValue) => {
+        const keys = path.split('.');
+        let value = displayData;
+        for (const key of keys) {
+            value = value?.[key];
+            if (value === undefined) return defaultValue;
+        }
+        return value || defaultValue;
+    };
 
     const renderSummary = () => (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -209,6 +257,85 @@ const AnalysisDashboard = ({ data }) => {
 
     return (
         <div className="h-full flex flex-col pt-2">
+            {/* Export & Edit Toolbar */}
+            <div className="flex items-center justify-between gap-2 mb-4 pb-4 border-b border-slate-200">
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={handleExportMarkdown}
+                        disabled={isExporting}
+                        className="flex items-center space-x-1 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                    >
+                        <Download size={14} />
+                        <span>Markdown</span>
+                    </button>
+                    <button
+                        onClick={handleExportWord}
+                        disabled={isExporting}
+                        className="flex items-center space-x-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                    >
+                        <FileIcon size={14} />
+                        <span>Word Doc</span>
+                    </button>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={() => setEditMode(!editMode)}
+                        className={cn(
+                            "flex items-center space-x-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
+                            editMode 
+                                ? "bg-amber-100 text-amber-700 hover:bg-amber-200" 
+                                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        )}
+                    >
+                        <Edit2 size={14} />
+                        <span>{editMode ? 'Editing' : 'Edit'}</span>
+                    </button>
+                    {editMode && (
+                        <button
+                            onClick={handleResetEdits}
+                            className="flex items-center space-x-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                        >
+                            <RotateCcw size={14} />
+                            <span>Reset</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Edit Mode Panel */}
+            {editMode && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 space-y-3">
+                    <h4 className="font-semibold text-amber-900 text-sm">Edit Content</h4>
+                    <textarea
+                        value={editedData.summary?.executive_summary || displayData.summary?.executive_summary || ''}
+                        onChange={(e) => handleEditSummary('executive_summary', e.target.value)}
+                        placeholder="Edit executive summary..."
+                        className="w-full p-2 border border-amber-300 rounded text-xs font-mono resize-none h-24 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => {
+                                const markdown = generateMarkdownSummary(editedData.summary ? { ...displayData, summary: editedData.summary } : displayData);
+                                downloadFile(markdown, 'credit_memo_edited.md', 'text/markdown');
+                            }}
+                            className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                        >
+                            <Download size={12} className="inline mr-1" />
+                            Save as Markdown
+                        </button>
+                        <button
+                            onClick={() => {
+                                downloadAsWord(editedData.summary ? { ...displayData, summary: editedData.summary } : displayData, 'credit_memo_edited.docx');
+                            }}
+                            className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                        >
+                            <Download size={12} className="inline mr-1" />
+                            Save as Word
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Tabs */}
             <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl mb-6 self-start w-full">
                 {[
