@@ -6,7 +6,7 @@ import {
 import { RotateCcw, Activity, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
 
 const SensitivityAnalysis = () => {
-    const { analysisData } = useAnalysis();
+    const { analysisData, settings } = useAnalysis();
 
     // Default values if no data is present (e.g., direct navigation or mock fallback)
     const defaultMetrics = {
@@ -61,10 +61,13 @@ const SensitivityAnalysis = () => {
 
     const calculateRisk = (metrics) => {
         let riskScore = 0;
-        if (metrics.debtToEquity > 2.5) riskScore += 2;
-        if (metrics.liquidity < 1.0) riskScore += 2;
-        if (metrics.ebitdaMargin < 10) riskScore += 1;
-        if (metrics.netProfitMargin < 5) riskScore += 1;
+        // Use settings if available, otherwise fallback to defaults (safety check)
+        const thresholds = settings?.riskThresholds || { debtToEquity: 2.5, liquidity: 1.0, netProfitMargin: 5.0 };
+
+        if (metrics.debtToEquity > thresholds.debtToEquity) riskScore += 2;
+        if (metrics.liquidity < thresholds.liquidityRatio) riskScore += 2;
+        if (metrics.ebitdaMargin < 10) riskScore += 1; // Hardcoded fallback or add to settings later
+        if (metrics.netProfitMargin < thresholds.netProfitMargin) riskScore += 1;
 
         if (riskScore >= 4) return { label: 'High Risk', color: 'text-rose-600', bg: 'bg-rose-100', border: 'border-rose-200' };
         if (riskScore >= 2) return { label: 'Medium Risk', color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-200' };

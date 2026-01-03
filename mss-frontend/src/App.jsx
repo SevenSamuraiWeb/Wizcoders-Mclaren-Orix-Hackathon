@@ -7,6 +7,7 @@ import AnalysisDashboard from './components/AnalysisDashboard';
 import SensitivityAnalysis from './components/SensitivityAnalysis';
 import ReportEditor from './components/ReportEditor';
 import { Loader2, AlertCircle } from 'lucide-react';
+import Settings from './components/Settings';
 import { AuthProvider } from './context/AuthContext';
 import { AnalysisProvider, useAnalysis } from './context/AnalysisContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -158,7 +159,7 @@ function App() {
             <Route path="/settings" element={
               <ProtectedRoute>
                 <Layout>
-                  <div className="p-6 text-2xl font-bold">Settings Placeholder</div>
+                  <Settings />
                 </Layout>
               </ProtectedRoute>
             } />
