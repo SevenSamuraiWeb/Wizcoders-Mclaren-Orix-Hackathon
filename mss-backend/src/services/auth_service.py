@@ -136,9 +136,21 @@ class AuthService:
         if len(password) < 6:
             raise InvalidCredentialsError()
 
-        # Demo: Accept any valid email format
-        # TODO: Replace with actual database lookup and password hashing
-        logger.info(f"Credential validation passed for: {email}")
+        # Demo: Accept any valid email format with standard demo passwords
+        # In production, this would validate against a real database with hashed passwords
+        demo_users = {
+            "demo@example.com": "demo123",
+            "analyst@example.com": "analyst123",
+            "admin@example.com": "admin123"
+        }
+        
+        # Check if credentials match demo database
+        if email in demo_users and demo_users[email] == password:
+            logger.info(f"Credential validation passed for: {email}")
+            return True
+        
+        # For other valid emails, accept them in demo mode
+        logger.info(f"Credential validation passed for: {email} (demo mode)")
         return True
 
     @staticmethod

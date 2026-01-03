@@ -12,6 +12,11 @@ from src.models.schemas import (
     ValidationErrorResponse,
     PaginationParams,
     HealthCheckResponse,
+    RiskFactor,
+    SemanticSearchQuery,
+    SemanticSearchResult,
+    MetricsExtraction,
+    DocumentMetricsResponse,
 )
 
 __all__ = [
@@ -24,4 +29,9 @@ __all__ = [
     "ValidationErrorResponse",
     "PaginationParams",
     "HealthCheckResponse",
+    "RiskFactor",
+    "SemanticSearchQuery",
+    "SemanticSearchResult",
+    "MetricsExtraction",
+    "DocumentMetricsResponse",
 ]

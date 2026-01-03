@@ -113,8 +113,8 @@ class Settings(BaseSettings):
     @classmethod
     def validate_environment(cls, v):
         """Validate environment is one of allowed values."""
-        if v not in ["development", "staging", "production"]:
-            raise ValueError("ENVIRONMENT must be 'development', 'staging', or 'production'")
+        if v not in ["development", "staging", "production", "testing"]:
+            raise ValueError("ENVIRONMENT must be 'development', 'staging', 'production', or 'testing'")
         return v
 
     def __init__(self, **data):

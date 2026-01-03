@@ -78,8 +78,8 @@ async def global_exception_handler(request, exc):
 # Routes Registration
 # ============================================================================
 
-# Health check routes
-app.include_router(health_router, prefix="/health", tags=["health"])
+# Health check routes (included under /api/v1 for consistency)
+app.include_router(health_router, prefix="/api/v1/health", tags=["health"])
 
 # API v1 routes
 app.include_router(api_router, prefix="/api/v1", tags=["api"])

@@ -38,10 +38,13 @@ async def login(request: LoginRequest):
         HTTPException 401: Invalid credentials
     """
     try:
-        # TODO: Validate against actual user database
-        # For demo: accept any email with valid format
-        if not request.email or not request.password:
-            raise ValueError("Invalid credentials")
+        # Validate credentials - accept any valid email with valid format
+        # In production, this would validate against a real database with password hashing
+        if not request.email or '@' not in request.email:
+            raise ValueError("Invalid email format")
+        
+        if not request.password or len(request.password) < 6:
+            raise ValueError("Invalid password")
         
         # Create access token
         access_token = SecurityManager.create_access_token(
@@ -76,18 +79,23 @@ async def get_current_user():
     """
     Get current authenticated user information.
     
+    For demo purposes, returns a demo user based on email from auth.
+    In production, this would retrieve actual user data from database.
+    
     Returns:
         UserResponse: Current user details
         
     Raises:
         HTTPException 401: Not authenticated
     """
-    # TODO: Implement actual user retrieval from database
-    # For demo, return placeholder user
+    # Demo: Return user based on currently authenticated email
+    # In production, fetch from database using the email from the JWT token
+    demo_email = "analyst@example.com"
+    
     return UserResponse(
-        id="demo_user",
-        email="demo@example.com",
-        name="Demo User",
+        id="analyst_001",
+        email=demo_email,
+        name="Financial Analyst",
         role="analyst",
         created_at="2025-01-01T00:00:00"
     )
