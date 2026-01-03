@@ -4,5 +4,7 @@ pymupdf
 pdfplumber 
 sentence-transformers 
 faiss-cpu 
-openai 
+groq 
 python-docx
+dotenv
+python-multipart
