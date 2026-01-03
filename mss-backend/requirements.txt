@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pymupdf 
+pdfplumber 
+sentence-transformers 
+faiss-cpu 
+openai 
+python-docx
