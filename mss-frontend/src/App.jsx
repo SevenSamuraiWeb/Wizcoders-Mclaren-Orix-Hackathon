@@ -17,7 +17,7 @@ import Login from './pages/Login';
 // Separate Analysis component to keep App.jsx clean
 const Analysis = () => {
   // Use context instead of local state for data persistence
-  const { analysisData, setAnalysisData } = useAnalysis();
+  const { analysisData, setAnalysisData, settings } = useAnalysis();
   const [file, setFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
@@ -29,6 +29,8 @@ const Analysis = () => {
 
     const formData = new FormData();
     formData.append("file", uploadedFile);
+    // Send settings along with the file
+    formData.append("settings", JSON.stringify(settings));
 
     try {
       // Connect to the actual backend endpoint

@@ -21,45 +21,82 @@ load_dotenv()
 
 def generate_markdown_summary(memo):
     """Convert memo to markdown format."""
-    sections = memo.get("sections", {})
     markdown = f"# Credit Memo Report\n\n"
-    markdown += f"**Document Type:** {memo.get('document_type', 'N/A')}\n"
-    markdown += f"**Confidence Level:** {memo.get('confidence_level', 'Draft')}\n\n"
+    
+    # Metadata
+    if memo.get('metadata'):
+        metadata = memo['metadata']
+        markdown += f"**Document:** {metadata.get('document_name', 'N/A')}\n"
+        markdown += f"**Confidence Level:** {int(metadata.get('overall_confidence', 0) * 100)}%\n"
+        markdown += f"**Model:** {metadata.get('model_info', 'N/A')}\n\n"
     
     # Executive Summary
-    markdown += "## 1. Executive Summary\n\n"
-    exec_sum = sections.get("executive_summary", {})
-    for item in exec_sum.get("highlights", []):
-        point = item.get("point", "")
-        attr = item.get("attribute", "")
-        sources = item.get("sources", [])
-        source_str = f" _(Pages: {', '.join(map(str, sources))})_" if sources else ""
-        markdown += f"- **{attr}:** {point}{source_str}\n"
+    if memo.get('summary'):
+        markdown += "## 1. Executive Summary\n\n"
+        summary = memo['summary']
+        if summary.get('executive_summary'):
+            markdown += f"{summary['executive_summary']}\n\n"
+        if summary.get('key_takeaways'):
+            markdown += "**Key Takeaways:**\n"
+            for item in summary['key_takeaways']:
+                markdown += f"- {item}\n"
+            markdown += "\n"
+        if summary.get('recommendation'):
+            markdown += f"**Recommendation:** {summary['recommendation']}\n"
+        if summary.get('recommendation_justification'):
+            markdown += f"**Justification:** {summary['recommendation_justification']}\n\n"
     
-    markdown += "\n## 2. Key Financial Metrics\n\n"
-    fin_metrics = sections.get("financial_metrics", {})
-    for m in fin_metrics.get("metrics", []):
-        name = m.get("name", "")
-        value = m.get("value", "N/A")
-        confidence = m.get("confidence", "")
-        markdown += f"- **{name}:** {value} ({confidence})\n"
+    # Financial Metrics
+    if memo.get('financial_metrics'):
+        markdown += "## 2. Key Financial Metrics\n\n"
+        for metric in memo['financial_metrics']:
+            name = f"{metric.get('category', '')} - {metric.get('label', metric.get('name', ''))}"
+            value = metric.get('value', 'N/A')
+            unit = metric.get('unit', '')
+            if unit == '%':
+                unit = '%'
+            elif unit == 'ratio':
+                unit = 'x'
+            status = metric.get('status', 'Unknown')
+            markdown += f"- **{name}:** {value}{unit} ({status})\n"
+        markdown += "\n"
     
-    markdown += "\n## 3. Risk Assessment\n\n"
-    risks = sections.get("risks", {})
-    for risk in risks.get("items", []):
-        title = risk.get("risk_title", "")
-        severity = risk.get("severity", "")
-        desc = risk.get("description", "")
-        markdown += f"### {title} ({severity})\n{desc}\n\n"
+    # 5Cs Analysis
+    if memo.get('credit_analysis_5cs'):
+        markdown += "## 3. Credit Analysis (5Cs)\n\n"
+        five_cs = memo['credit_analysis_5cs']
+        for key, value in five_cs.items():
+            if value:
+                markdown += f"### {key.upper()}\n"
+                # Get the main content
+                content = value.get('assessment') or value.get('equity_position') or value.get('loan_purpose') or value.get('repayment_source') or 'No analysis provided'
+                markdown += f"{content}\n\n"
     
-    markdown += "\n## 4. Final Recommendation\n\n"
-    rec = sections.get("recommendation", {})
-    stance = rec.get("stance", "")
-    summary = rec.get("summary", "")
-    markdown += f"**Stance:** {stance}\n\n{summary}\n\n"
-    markdown += "**Justification:**\n"
-    for j in rec.get("justification", []):
-        markdown += f"- {j.get('point', '')}\n"
+    # Risk Assessment
+    if memo.get('risk_assessment'):
+        markdown += "## 4. Risk Assessment\n\n"
+        risks = memo['risk_assessment']
+        
+        if risks.get('red_flags'):
+            markdown += "### Red Flags\n"
+            for flag in risks['red_flags']:
+                issue = flag.get('issue', '')
+                severity = flag.get('severity', 'Medium')
+                mitigant = flag.get('mitigant', 'None listed')
+                markdown += f"- **{issue}** ({severity} Risk)\n  - Mitigant: {mitigant}\n"
+            markdown += "\n"
+        
+        if risks.get('strengths'):
+            markdown += "### Strengths\n"
+            for item in risks['strengths']:
+                markdown += f"- {item.get('text', '')}\n"
+            markdown += "\n"
+        
+        if risks.get('weaknesses'):
+            markdown += "### Weaknesses\n"
+            for item in risks['weaknesses']:
+                markdown += f"- {item.get('text', '')}\n"
+            markdown += "\n"
     
     return markdown
 
@@ -73,60 +110,112 @@ def generate_word_document(memo):
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
     # Metadata
-    doc.add_paragraph(f"Document Type: {memo.get('document_type', 'N/A')}")
-    doc.add_paragraph(f"Confidence Level: {memo.get('confidence_level', 'Draft')}")
-    doc.add_paragraph()
-    
-    sections = memo.get("sections", {})
+    if memo.get('metadata'):
+        metadata = memo['metadata']
+        doc.add_paragraph(f"Document: {metadata.get('document_name', 'N/A')}")
+        doc.add_paragraph(f"Confidence Level: {int(metadata.get('overall_confidence', 0) * 100)}%")
+        doc.add_paragraph(f"Model: {metadata.get('model_info', 'N/A')}")
+        doc.add_paragraph()
     
     # Executive Summary
-    doc.add_heading('1. Executive Summary', level=1)
-    exec_sum = sections.get("executive_summary", {})
-    for item in exec_sum.get("highlights", []):
-        point = item.get("point", "")
-        attr = item.get("attribute", "")
-        sources = item.get("sources", [])
-        source_str = f" (Pages: {', '.join(map(str, sources))})" if sources else ""
-        p = doc.add_paragraph(f"{attr}: {point}{source_str}", style='List Bullet')
+    if memo.get('summary'):
+        doc.add_heading('1. Executive Summary', level=1)
+        summary = memo['summary']
+        
+        if summary.get('executive_summary'):
+            doc.add_paragraph(summary['executive_summary'])
+            doc.add_paragraph()
+        
+        if summary.get('key_takeaways'):
+            doc.add_heading('Key Takeaways', level=2)
+            for item in summary['key_takeaways']:
+                doc.add_paragraph(item, style='List Bullet')
+            doc.add_paragraph()
+        
+        
+        
+        if summary.get('recommendation_justification'):
+            p = doc.add_paragraph()
+            p.add_run('Justification: ').bold = True
+            p.add_run(summary['recommendation_justification'])
+            doc.add_paragraph()
     
-    # Key Financial Metrics
-    doc.add_heading('2. Key Financial Metrics', level=1)
-    fin_metrics = sections.get("financial_metrics", {})
-    table = doc.add_table(rows=1, cols=3)
-    table.style = 'Light Grid Accent 1'
-    hdr_cells = table.rows[0].cells
-    hdr_cells[0].text = 'Metric'
-    hdr_cells[1].text = 'Value'
-    hdr_cells[2].text = 'Confidence'
+    # Financial Metrics
+    if memo.get('financial_metrics'):
+        doc.add_heading('2. Key Financial Metrics', level=1)
+        table = doc.add_table(rows=1, cols=4)
+        table.style = 'Light Grid Accent 1'
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Category'
+        hdr_cells[1].text = 'Metric'
+        hdr_cells[2].text = 'Value'
+        hdr_cells[3].text = 'Status'
+        
+        for metric in memo['financial_metrics']:
+            row_cells = table.add_row().cells
+            row_cells[0].text = metric.get('category', '')
+            row_cells[1].text = metric.get('label', metric.get('name', ''))
+            value = str(metric.get('value', 'N/A'))
+            unit = metric.get('unit', '')
+            if unit == '%':
+                value += '%'
+            elif unit == 'ratio':
+                value += 'x'
+            row_cells[2].text = value
+            row_cells[3].text = metric.get('status', 'Unknown')
+        doc.add_paragraph()
     
-    for m in fin_metrics.get("metrics", []):
-        row_cells = table.add_row().cells
-        row_cells[0].text = m.get("name", "")
-        row_cells[1].text = str(m.get("value", "N/A"))
-        row_cells[2].text = m.get("confidence", "")
+    # 5Cs Analysis
+    if memo.get('credit_analysis_5cs'):
+        doc.add_heading('3. Credit Analysis (5Cs)', level=1)
+        five_cs = memo['credit_analysis_5cs']
+        
+        for key, value in five_cs.items():
+            if value:
+                doc.add_heading(key.upper(), level=2)
+                # Get the main content
+                content = value.get('assessment') or value.get('equity_position') or value.get('loan_purpose') or value.get('repayment_source') or 'No analysis provided'
+                doc.add_paragraph(content)
+                doc.add_paragraph()
     
     # Risk Assessment
-    doc.add_heading('3. Risk Assessment', level=1)
-    risks = sections.get("risks", {})
-    for risk in risks.get("items", []):
-        title = risk.get("risk_title", "")
-        severity = risk.get("severity", "")
-        desc = risk.get("description", "")
-        doc.add_heading(f"{title} ({severity})", level=2)
-        doc.add_paragraph(desc)
+    if memo.get('risk_assessment'):
+        doc.add_heading('4. Risk Assessment', level=1)
+        risks = memo['risk_assessment']
+        
+        if risks.get('red_flags'):
+            doc.add_heading('Red Flags', level=2)
+            for flag in risks['red_flags']:
+                issue = flag.get('issue', '')
+                severity = flag.get('severity', 'Medium')
+                mitigant = flag.get('mitigant', 'None listed')
+                p = doc.add_paragraph(style='List Bullet')
+                p.add_run(f"{issue} ({severity} Risk)\n").bold = True
+                p.add_run(f"Mitigant: {mitigant}")
+            doc.add_paragraph()
+        
+        if risks.get('strengths'):
+            doc.add_heading('Strengths', level=2)
+            for item in risks['strengths']:
+                doc.add_paragraph(item.get('text', ''), style='List Bullet')
+            doc.add_paragraph()
+        
+        if risks.get('weaknesses'):
+            doc.add_heading('Weaknesses', level=2)
+            for item in risks['weaknesses']:
+                doc.add_paragraph(item.get('text', ''), style='List Bullet')
+            doc.add_paragraph()
     
-    # Recommendation
-    doc.add_heading('4. Final Recommendation', level=1)
-    rec = sections.get("recommendation", {})
-    stance = rec.get("stance", "")
-    summary = rec.get("summary", "")
-    doc.add_paragraph(f"Stance: {stance}").bold = True
-    doc.add_paragraph(summary)
-    doc.add_heading('Justification:', level=2)
-    for j in rec.get("justification", []):
-        doc.add_paragraph(j.get('point', ''), style='List Bullet')
-    
-    return doc
+    if summary.get('recommendation'):
+            p = doc.add_paragraph()
+            p.add_run('Recommendation: ').bold = True
+            p.add_run(summary['recommendation'])
+            
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
 
 
 def simplify_text(text, api_key):
@@ -266,84 +355,105 @@ def simplify_text(text, api_key):
             # --- Header Info ---
             c1, c2 = st.columns([3, 1])
             with c1:
-                st.markdown(f"**Document Type:** {memo.get('document_type', 'N/A')}")
+                metadata = memo.get('metadata', {})
+                st.markdown(f"**Document:** {metadata.get('document_name', 'N/A')}")
             with c2:
-                st.markdown(f"**Confidence:** `{memo.get('confidence_level', 'Draft')}`")
-
-            sections = memo.get("sections", {})
+                confidence = int(metadata.get('overall_confidence', 0) * 100)
+                st.markdown(f"**Confidence:** `{confidence}%`")
 
             # --- Section 1: Executive Summary ---
-            st.markdown('<div class="section-header">1. Executive Summary</div>', unsafe_allow_html=True)
-            exec_sum = sections.get("executive_summary", {})
-            highlights = exec_sum.get("highlights", [])
-            
-            for item in highlights:
-                point = item.get("point", "")
-                attr = item.get("attribute", "General")
-                sources = item.get("sources", [])
-                source_str = f" (Page {', '.join(map(str, sources))})" if sources else ""
+            if memo.get('summary'):
+                st.markdown('<div class="section-header">1. Executive Summary</div>', unsafe_allow_html=True)
+                summary = memo['summary']
                 
-                st.markdown(f"""
-                <div style="margin-bottom: 8px;">
-                    <span style="background-color: #E0F2FE; color: #0369A1; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; font-weight: 600;">{attr}</span>
-                    {point} <span style="color: #6B7280; font-size: 0.9em;">{source_str}</span>
-                </div>
-                """, unsafe_allow_html=True)
+                if summary.get('executive_summary'):
+                    st.markdown(summary['executive_summary'])
+                
+                if summary.get('key_takeaways'):
+                    st.markdown("**Key Takeaways:**")
+                    for item in summary['key_takeaways']:
+                        st.markdown(f"""
+                        <div style="margin-bottom: 8px;">
+                            <span style="background-color: #E0F2FE; color: #0369A1; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; font-weight: 600;">•</span>
+                            {item}
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                if summary.get('recommendation'):
+                    st.markdown(f"**Recommendation:** {summary['recommendation']}")
+                if summary.get('recommendation_justification'):
+                    st.markdown(f"*{summary['recommendation_justification']}*")
 
             # --- Section 2: Key Financial Metrics ---
-            st.markdown('<div class="section-header">2. Key Financial Metrics (FY24)</div>', unsafe_allow_html=True)
-            fin_metrics = sections.get("financial_metrics", {})
-            metrics_list = fin_metrics.get("metrics", [])
-            
-            # Display in rows of 3
-            cols = st.columns(3)
-            for i, m in enumerate(metrics_list):
-                with cols[i % 3]:
-                    st.metric(
-                        label=m.get("name", "Metric"),
-                        value=str(m.get("value", "N/A")),
-                        delta=f"Conf: {m.get('confidence', 'N/A')}",
-                        delta_color="off"
-                    )
-            
-            # --- Section 3: Risk Assessment ---
-            st.markdown('<div class="section-header">3. Risk Assessment</div>', unsafe_allow_html=True)
-            risks = sections.get("risks", {})
-            risk_items = risks.get("items", [])
-            
-            for risk in risk_items:
-                severity = risk.get("severity", "Medium")
-                title = risk.get("risk_title", "Risk")
-                desc = risk.get("description", "")
-                r_type = risk.get("risk_type", "General")
+            if memo.get('financial_metrics'):
+                st.markdown('<div class="section-header">2. Key Financial Metrics</div>', unsafe_allow_html=True)
+                metrics_list = memo['financial_metrics']
                 
-                css_class = "risk-card-high" if severity == "High" else "risk-card-medium"
-                icon = "🔴" if severity == "High" else "⚠️"
-                
-                st.markdown(f"""
-                <div class="{css_class}">
-                    <strong>{icon} {title}</strong> <span style="color: #6B7280;">({r_type})</span><br>
-                    {desc}
-                </div>
-                """, unsafe_allow_html=True)
-
-            # --- Section 4: Recommendation ---
-            st.markdown('<div class="section-header">4. Final Recommendation</div>', unsafe_allow_html=True)
-            rec = sections.get("recommendation", {})
-            stance = rec.get("stance", "Neutral")
-            summary = rec.get("summary", "")
+                # Display in rows of 3
+                cols = st.columns(3)
+                for i, m in enumerate(metrics_list):
+                    with cols[i % 3]:
+                        value = str(m.get("value", "N/A"))
+                        unit = m.get('unit', '')
+                        if unit == '%':
+                            value += '%'
+                        elif unit == 'ratio':
+                            value += 'x'
+                        
+                        metric_name = f"{m.get('category', '')} - {m.get('label', m.get('name', 'Metric'))}"
+                        st.metric(
+                            label=metric_name,
+                            value=value,
+                            delta=f"{m.get('status', 'N/A')}",
+                            delta_color="off"
+                        )
             
-            if stance == "Positive":
-                st.success(f"**Recommendation: {stance}**\n\n{summary}")
-            elif stance == "Negative":
-                st.error(f"**Recommendation: {stance}**\n\n{summary}")
-            else:
-                st.warning(f"**Recommendation: {stance}**\n\n{summary}")
+            # --- Section 3: Credit Analysis (5Cs) ---
+            if memo.get('credit_analysis_5cs'):
+                st.markdown('<div class="section-header">3. Credit Analysis (5Cs)</div>', unsafe_allow_html=True)
+                five_cs = memo['credit_analysis_5cs']
                 
-            # Justification
-            st.markdown("**Basis for Recommendation:**")
-            for j in rec.get("justification", []):
-                st.markdown(f"- {j.get('point', '')}")
+                for key, value in five_cs.items():
+                    if value:
+                        st.markdown(f"**{key.upper()}**")
+                        content = value.get('assessment') or value.get('equity_position') or value.get('loan_purpose') or value.get('repayment_source') or 'No analysis provided'
+                        st.markdown(f"_{content}_")
+                        st.markdown("")
+            
+            # --- Section 4: Risk Assessment ---
+            if memo.get('risk_assessment'):
+                st.markdown('<div class="section-header">4. Risk Assessment</div>', unsafe_allow_html=True)
+                risks = memo['risk_assessment']
+                
+                if risks.get('red_flags'):
+                    st.markdown("**Red Flags:**")
+                    for flag in risks['red_flags']:
+                        severity = flag.get('severity', 'Medium')
+                        issue = flag.get('issue', 'Risk')
+                        mitigant = flag.get('mitigant', 'No mitigant listed')
+                        
+                        css_class = "risk-card-high" if severity == "High" else "risk-card-medium"
+                        icon = "🔴" if severity == "High" else "⚠️"
+                        
+                        st.markdown(f"""
+                        <div class="{css_class}">
+                            <strong>{icon} {issue}</strong> <span style="color: #6B7280;">({severity} Risk)</span><br>
+                            <strong>Mitigant:</strong> {mitigant}
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if risks.get('strengths'):
+                        st.markdown("**Strengths:**")
+                        for item in risks['strengths']:
+                            st.markdown(f"- {item.get('text', '')}")
+                
+                with col2:
+                    if risks.get('weaknesses'):
+                        st.markdown("**Weaknesses:**")
+                        for item in risks['weaknesses']:
+                            st.markdown(f"- {item.get('text', '')}")
 
             # --- Export and Edit Section ---
             st.divider()
@@ -383,23 +493,16 @@ def simplify_text(text, api_key):
                         st.session_state.simplified_memo = None
                     
                     with st.spinner("Simplifying content..."):
-                        # Simplify each section
+                        # Simplify the memo content
                         simplified = memo.copy()
-                        simplified_sections = {}
                         
-                        for section_name, section_data in sections.items():
-                            if isinstance(section_data, dict):
-                                simplified_section = {}
-                                for key, value in section_data.items():
-                                    if isinstance(value, str) and len(value) > 50:
-                                        simplified_section[key] = simplify_text(value, api_key)
-                                    elif isinstance(value, list):
-                                        simplified_section[key] = value
-                                    else:
-                                        simplified_section[key] = value
-                                simplified_sections[section_name] = simplified_section
+                        # Simplify summary section
+                        if simplified.get('summary'):
+                            if simplified['summary'].get('executive_summary'):
+                                simplified['summary']['executive_summary'] = simplify_text(
+                                    simplified['summary']['executive_summary'], api_key
+                                )
                         
-                        simplified["sections"] = simplified_sections
                         st.session_state.simplified_memo = simplified
                         st.success("Content simplified! View below ⬇️")
             
@@ -412,7 +515,6 @@ def simplify_text(text, api_key):
             if st.session_state.get("simplified_memo"):
                 st.info("ℹ️ Showing simplified version")
                 memo = st.session_state.simplified_memo
-                sections = memo.get("sections", {})
             
             # Text editing area
             st.markdown("#### ✏️ Edit Summary")
@@ -422,28 +524,51 @@ def simplify_text(text, api_key):
             edited_content = {}
             
             # Executive Summary Editor
-            with st.expander("Edit Executive Summary", expanded=False):
-                exec_sum = sections.get("executive_summary", {})
-                current_text = "\n".join([f"- {item.get('point', '')}" for item in exec_sum.get("highlights", [])])
-                edited_content["executive_summary"] = st.text_area("Executive Summary Points:", value=current_text, height=150, key="exec_edit")
+            if memo.get('summary'):
+                with st.expander("Edit Executive Summary", expanded=False):
+                    summary = memo['summary']
+                    current_text = summary.get('executive_summary', '')
+                    if summary.get('key_takeaways'):
+                        current_text += "\\n\\nKey Takeaways:\\n" + "\\n".join([f"- {item}" for item in summary['key_takeaways']])
+                    edited_content["executive_summary"] = st.text_area("Executive Summary:", value=current_text, height=150, key="exec_edit")
             
             # Financial Metrics Editor
-            with st.expander("Edit Financial Metrics", expanded=False):
-                fin_metrics = sections.get("financial_metrics", {})
-                current_text = "\n".join([f"{m.get('name', '')}: {m.get('value', 'N/A')}" for m in fin_metrics.get("metrics", [])])
-                edited_content["financial_metrics"] = st.text_area("Financial Metrics:", value=current_text, height=150, key="metrics_edit")
+            if memo.get('financial_metrics'):
+                with st.expander("Edit Financial Metrics", expanded=False):
+                    current_text = "\\n".join([
+                        f"{m.get('category', '')} - {m.get('label', m.get('name', ''))}: {m.get('value', 'N/A')}{m.get('unit', '')} ({m.get('status', '')})"
+                        for m in memo['financial_metrics']
+                    ])
+                    edited_content["financial_metrics"] = st.text_area("Financial Metrics:", value=current_text, height=150, key="metrics_edit")
+            
+            # 5Cs Editor
+            if memo.get('credit_analysis_5cs'):
+                with st.expander("Edit 5Cs Analysis", expanded=False):
+                    current_text = ""
+                    for key, value in memo['credit_analysis_5cs'].items():
+                        if value:
+                            content = value.get('assessment') or value.get('equity_position') or value.get('loan_purpose') or value.get('repayment_source', '')
+                            current_text += f"{key.upper()}:\\n{content}\\n\\n"
+                    edited_content["5cs"] = st.text_area("5Cs Analysis:", value=current_text, height=200, key="5cs_edit")
             
             # Risks Editor
-            with st.expander("Edit Risk Assessment", expanded=False):
-                risks = sections.get("risks", {})
-                current_text = "\n".join([f"{risk.get('risk_title', '')} ({risk.get('severity', '')}): {risk.get('description', '')}" for risk in risks.get("items", [])])
-                edited_content["risks"] = st.text_area("Risk Assessment:", value=current_text, height=150, key="risks_edit")
-            
-            # Recommendation Editor
-            with st.expander("Edit Recommendation", expanded=False):
-                rec = sections.get("recommendation", {})
-                current_text = f"{rec.get('stance', '')}\n\n{rec.get('summary', '')}"
-                edited_content["recommendation"] = st.text_area("Recommendation:", value=current_text, height=150, key="rec_edit")
+            if memo.get('risk_assessment'):
+                with st.expander("Edit Risk Assessment", expanded=False):
+                    risks = memo['risk_assessment']
+                    current_text = ""
+                    if risks.get('red_flags'):
+                        current_text += "RED FLAGS:\\n"
+                        for flag in risks['red_flags']:
+                            current_text += f"- {flag.get('issue', '')} ({flag.get('severity', '')}): {flag.get('mitigant', '')}\\n"
+                    if risks.get('strengths'):
+                        current_text += "\\nSTRENGTHS:\\n"
+                        for item in risks['strengths']:
+                            current_text += f"- {item.get('text', '')}\\n"
+                    if risks.get('weaknesses'):
+                        current_text += "\\nWEAKNESSES:\\n"
+                        for item in risks['weaknesses']:
+                            current_text += f"- {item.get('text', '')}\\n"
+                    edited_content["risks"] = st.text_area("Risk Assessment:", value=current_text, height=200, key="risks_edit")
             
             # Export edited content
             st.markdown("#### 📥 Export Edited Content")
@@ -451,11 +576,12 @@ def simplify_text(text, api_key):
             
             with export_col1:
                 if st.button("Save as Markdown (with edits)", use_container_width=True):
-                    edited_md = "# Credit Memo Report (Edited)\n\n"
-                    edited_md += f"**Document Type:** {memo.get('document_type', 'N/A')}\n\n"
+                    edited_md = "# Credit Memo Report (Edited)\\n\\n"
+                    metadata = memo.get('metadata', {})
+                    edited_md += f"**Document:** {metadata.get('document_name', 'N/A')}\\n\\n"
                     for section_name, content in edited_content.items():
                         if content:
-                            edited_md += f"## {section_name.replace('_', ' ').title()}\n{content}\n\n"
+                            edited_md += f"## {section_name.replace('_', ' ').title()}\\n{content}\\n\\n"
                     
                     st.download_button(
                         label="📥 Download Edited Markdown",

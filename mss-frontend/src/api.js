@@ -267,21 +267,24 @@ export const downloadFile = (content, filename, mimeType) => {
 /**
  * Download as Word document (using html2pdf or similar)
  */
-export const downloadAsWord = (data, filename = 'credit_memo.doc') => {
-    const html = generateWordHTML(data);
-    // Use proper MIME type for Word 2003 XML or just HTML pretending to be doc.
-    // 'application/msword' works best for .doc (HTML format).
-    // Adding the BOM (Byte Order Mark) helps with UTF-8 char rendering.
-    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+export async function downloadAsWord(memo, filename = "credit_memo.docx") {
+    const res = await fetch("http://127.0.0.1:8000/download/word", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(memo)
+    });
+
+    const blob = await res.blob(); // ✅ REAL DOCX
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+
     window.URL.revokeObjectURL(url);
 };
+
 
 /**
  * Simplify text using backend API

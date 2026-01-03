@@ -157,7 +157,8 @@ const Settings = () => {
                             onChange={(e) => handleChange('apiSettings', 'model', e.target.value)}
                             className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
                         >
-                            <option value="mixtral-8x7b-32768">Mixtral 8x7b (Recommended)</option>
+                            <option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout (Default)</option>
+                            <option value="mixtral-8x7b-32768">Mixtral 8x7b</option>
                             <option value="llama2-70b-4096">Llama2 70b</option>
                             <option value="llama3-70b-8192">Llama3 70b</option>
                             <option value="gemma-7b-it">Gemma 7b</option>

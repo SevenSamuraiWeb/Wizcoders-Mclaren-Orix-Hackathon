@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils';
 import { generateMarkdownSummary, generateWordHTML, downloadFile, downloadAsWord } from '../api';
+import { useAnalysis } from '../context/AnalysisContext';
 
 import defaultMockData from '../data/mockAnalysis.json';
 
@@ -40,6 +41,7 @@ const SourceBadge = ({ source }) => {
 };
 
 const AnalysisDashboard = ({ data }) => {
+    const { settings } = useAnalysis();
     const [activeTab, setActiveTab] = useState('summary'); // 'summary' | '5cs' | 'financials' | 'risks'
     const [editMode, setEditMode] = useState(false);
     const [editedData, setEditedData] = useState({});
@@ -47,6 +49,9 @@ const AnalysisDashboard = ({ data }) => {
 
     // Use passed data or fall back to mock data
     const displayData = data || defaultMockData;
+    
+    // Get report preferences from settings
+    const { includeExecutiveSummary, include5Cs, includeRiskAssessment } = settings.reportPreferences;
 
     const handleExportMarkdown = () => {
         setIsExporting(true);
@@ -197,14 +202,19 @@ const AnalysisDashboard = ({ data }) => {
                                 </div>
                                 <div className={cn(
                                     "text-lg font-bold",
-                                    metric.status === 'healthy' ? "text-emerald-500" : "text-amber-500"
+                                    metric.status === 'healthy' ? "text-emerald-500" : 
+                                    metric.status === 'critical' ? "text-rose-600" : "text-amber-500"
                                 )}>
                                     {metric.value}{metric.unit === '%' ? '%' : metric.unit === 'ratio' ? 'x' : ''}
                                 </div>
                             </div>
                             <div className="flex items-center justify-between text-[10px] text-slate-400">
                                 <span>{metric.is_calculated ? 'Algorithm Calculated' : 'Direct Extractions'}</span>
-                                <span className="uppercase">{metric.status}</span>
+                                <span className={cn(
+                                    "uppercase font-semibold",
+                                    metric.status === 'healthy' ? "text-emerald-600" :
+                                    metric.status === 'critical' ? "text-rose-600" : "text-amber-600"
+                                )}>{metric.status}</span>
                             </div>
                         </div>
                     ))}
@@ -324,14 +334,20 @@ const AnalysisDashboard = ({ data }) => {
                             Save as Markdown
                         </button>
                         <button
-                            onClick={() => {
-                                downloadAsWord(editedData.summary ? { ...displayData, summary: editedData.summary } : displayData, 'credit_memo_edited.docx');
-                            }}
-                            className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"
-                        >
-                            <Download size={12} className="inline mr-1" />
-                            Save as Word
-                        </button>
+    onClick={() => {
+        downloadAsWord(
+            editedData.summary
+                ? { ...displayData, summary: editedData.summary }
+                : displayData,
+            "credit_memo_edited.docx"
+        );
+    }}
+    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"
+>
+    <Download size={12} className="inline mr-1" />
+    Save as Word
+</button>
+
                     </div>
                 </div>
             )}
@@ -339,11 +355,11 @@ const AnalysisDashboard = ({ data }) => {
             {/* Tabs */}
             <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl mb-6 self-start w-full">
                 {[
-                    { id: 'summary', label: 'Summary' },
-                    { id: '5cs', label: '5Cs Analysis' },
-                    { id: 'financials', label: 'Financials' },
-                    { id: 'risks', label: 'Risk Factors' },
-                ].map(tab => (
+                    includeExecutiveSummary && { id: 'summary', label: 'Summary' },
+                    include5Cs && { id: '5cs', label: '5Cs Analysis' },
+                    { id: 'financials', label: 'Financials' }, // Always show financials
+                    includeRiskAssessment && { id: 'risks', label: 'Risk Factors' },
+                ].filter(Boolean).map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
@@ -360,10 +376,28 @@ const AnalysisDashboard = ({ data }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-10">
-                {activeTab === 'summary' && renderSummary()}
-                {activeTab === '5cs' && render5Cs()}
+                {activeTab === 'summary' && includeExecutiveSummary && renderSummary()}
+                {activeTab === 'summary' && !includeExecutiveSummary && (
+                    <div className="text-center p-8 text-slate-400">
+                        <Info size={48} className="mx-auto mb-4 opacity-50" />
+                        <p>Executive Summary is disabled in settings</p>
+                    </div>
+                )}
+                {activeTab === '5cs' && include5Cs && render5Cs()}
+                {activeTab === '5cs' && !include5Cs && (
+                    <div className="text-center p-8 text-slate-400">
+                        <Info size={48} className="mx-auto mb-4 opacity-50" />
+                        <p>5Cs Analysis is disabled in settings</p>
+                    </div>
+                )}
                 {activeTab === 'financials' && renderFinancials()}
-                {activeTab === 'risks' && renderRisks()}
+                {activeTab === 'risks' && includeRiskAssessment && renderRisks()}
+                {activeTab === 'risks' && !includeRiskAssessment && (
+                    <div className="text-center p-8 text-slate-400">
+                        <Info size={48} className="mx-auto mb-4 opacity-50" />
+                        <p>Risk Assessment is disabled in settings</p>
+                    </div>
+                )}
             </div>
         </div>
     );

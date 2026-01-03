@@ -1,25 +1,43 @@
 import json
 from retriever import ContextRetriever
+from typing import Optional
 
 class CreditMemoGenerator:
     """
     Generates a structured banking credit memo using a ContextRetriever and an LLM.
     Enforces the refined 5Cs schema with strict JSON output and source citations.
     """
-    def __init__(self, retriever: ContextRetriever, llm_client, model_name: str = "meta-llama/llama-4-scout-17b-16e-instruct"):
+    def __init__(self, retriever: ContextRetriever, llm_client, model_name: str = "meta-llama/llama-4-scout-17b-16e-instruct", settings=None):
         self.retriever = retriever
         self.client = llm_client
         self.model_name = model_name
+        self.settings = settings
 
     def generate_credit_memo(self) -> dict:
         """
         Generates the full credit memo by processing each section.
+        Respects user settings for which sections to include.
         """
-        # Execute sections in parallel could be an optimization, but sequential is safer for now
-        summary = self._generate_executive_summary()
-        financials = self._generate_financial_metrics()
-        five_cs = self._generate_5cs()
-        risks = self._generate_risks()
+        result = {}
+        
+        # Get preferences
+        prefs = self.settings.reportPreferences if self.settings else None
+        include_summary = prefs.includeExecutiveSummary if prefs else True
+        include_5cs = prefs.include5Cs if prefs else True
+        include_risks = prefs.includeRiskAssessment if prefs else True
+        
+        # Execute sections based on preferences
+        if include_summary:
+            result["summary"] = self._generate_executive_summary()
+        
+        # Financial metrics are always included
+        result["financial_metrics"] = self._generate_financial_metrics()
+        
+        if include_5cs:
+            result["credit_analysis_5cs"] = self._generate_5cs()
+        
+        if include_risks:
+            result["risk_assessment"] = self._generate_risks()
         
         # Construct Metadata (Simplified for prototype)
         metadata = {
@@ -30,14 +48,9 @@ class CreditMemoGenerator:
             "processing_time_ms": 1200,
             "model_info": self.model_name
         }
+        result["metadata"] = metadata
 
-        return {
-            "summary": summary,
-            "financial_metrics": financials,
-            "credit_analysis_5cs": five_cs,
-            "risk_assessment": risks,
-            "metadata": metadata
-        }
+        return result
 
     def _call_llm(self, original_prompt: str, json_schema: str = None) -> dict:
         system_msg = (
@@ -112,7 +125,56 @@ class CreditMemoGenerator:
         Wrap the list in a key called "metrics" for valid JSON object.
         """
         response = self._call_llm(prompt)
-        return response.get("metrics", [])
+        metrics = response.get("metrics", [])
+        
+        # Apply user-defined risk thresholds if available
+        if self.settings and self.settings.riskThresholds:
+            metrics = self._apply_risk_thresholds(metrics)
+        
+        return metrics
+    
+    def _apply_risk_thresholds(self, metrics: list) -> list:
+        """
+        Re-evaluate metric status based on user-defined risk thresholds.
+        """
+        thresholds = self.settings.riskThresholds
+        
+        for metric in metrics:
+            try:
+                label = metric.get("label", "").lower()
+                value = float(metric.get("value", 0))
+                
+                # Apply liquidity ratio threshold (Current Ratio)
+                if "current ratio" in label or "liquidity" in label:
+                    if value < thresholds.liquidityRatio:
+                        metric["status"] = "critical"
+                    elif value < thresholds.liquidityRatio * 1.2:
+                        metric["status"] = "warning"
+                    else:
+                        metric["status"] = "healthy"
+                
+                # Apply debt-to-equity threshold
+                elif "debt" in label and "equity" in label:
+                    if value > thresholds.debtToEquity:
+                        metric["status"] = "critical"
+                    elif value > thresholds.debtToEquity * 0.8:
+                        metric["status"] = "warning"
+                    else:
+                        metric["status"] = "healthy"
+                
+                # Apply net profit margin threshold
+                elif "profit margin" in label or "net margin" in label:
+                    if value < thresholds.netProfitMargin:
+                        metric["status"] = "critical"
+                    elif value < thresholds.netProfitMargin * 1.2:
+                        metric["status"] = "warning"
+                    else:
+                        metric["status"] = "healthy"
+            except (ValueError, TypeError):
+                # Keep original status if value conversion fails
+                pass
+        
+        return metrics
 
     def _generate_5cs(self) -> dict:
         context = self.retriever.retrieve_context("credit_analysis_5cs")
