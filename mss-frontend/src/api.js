@@ -40,7 +40,8 @@ export const generateMarkdownSummary = (data) => {
         Object.entries(data.credit_analysis_5cs).forEach(([key, value]) => {
             if (!value) return;
             markdown += `### ${key.toUpperCase()}\n`;
-            markdown += safe(value.analysis, 'No analysis provided.') + "\n\n";
+            const content = value.assessment || value.equity_position || value.loan_purpose || value.repayment_source || 'No analysis provided.';
+            markdown += safe(content) + "\n\n";
             if (value.highlights && Array.isArray(value.highlights)) {
                 markdown += "**Highlights:**\n";
                 value.highlights.forEach(h => {
@@ -57,7 +58,8 @@ export const generateMarkdownSummary = (data) => {
         data.financial_metrics.forEach(metric => {
             if (!metric) return;
             const unit = metric.unit === '%' ? '%' : metric.unit === 'ratio' ? 'x' : '';
-            markdown += `- **${safe(metric.name, 'Unknown Metric')}:** ${safe(metric.value, 'N/A')}${unit} (${safe(metric.status, 'Unknown')})\n`;
+            const name = [metric.category, metric.label || metric.name].filter(Boolean).join(' - ') || 'Unknown Metric';
+            markdown += `- **${safe(name)}:** ${safe(metric.value, 'N/A')}${unit} (${safe(metric.status, 'Unknown')})\n`;
         });
         markdown += "\n";
     }
@@ -171,7 +173,9 @@ export const generateWordHTML = (data) => {
         Object.entries(data.credit_analysis_5cs).forEach(([key, value]) => {
             if (!value) return;
             html += `<h3>${key.toUpperCase()}</h3>`;
-            html += `<p>${safe(value.analysis, 'No analysis.')}</p>`;
+            // Match AnalysisDashboard exactly: removed value.analysis to prevent shadowing other keys
+            const content = value.assessment || value.equity_position || value.loan_purpose || value.repayment_source || 'No analysis provided.';
+            html += `<p>${safe(content)}</p>`;
             if (value.highlights && Array.isArray(value.highlights)) {
                 html += `<ul>`;
                 value.highlights.forEach(h => {
@@ -190,7 +194,9 @@ export const generateWordHTML = (data) => {
             if (!metric) return;
             const statusClass = metric.status === 'healthy' ? 'metric-value' : 'risk-medium';
             const unit = metric.unit === '%' ? '%' : metric.unit === 'ratio' ? 'x' : '';
-            html += `<tr><td>${safe(metric.name, 'Unknown')}</td><td class="${statusClass}">${safe(metric.value, '0')}${unit}</td><td>${safe(metric.status, '-')}</td></tr>`;
+            // Match AnalysisDashboard: combine category and label
+            const name = [metric.category, metric.label || metric.name].filter(Boolean).join(' - ') || 'Unknown Metric';
+            html += `<tr><td>${safe(name)}</td><td class="${statusClass}">${safe(metric.value, '0')}${unit}</td><td>${safe(metric.status, '-')}</td></tr>`;
         });
         html += `</table>`;
     }

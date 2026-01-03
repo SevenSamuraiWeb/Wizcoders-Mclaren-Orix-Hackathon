@@ -3,7 +3,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { useAnalysis } from '../context/AnalysisContext';
 import { generateWordHTML, downloadFile } from '../api';
-import { Save, Download, FileText, RotateCcw } from 'lucide-react';
+import { Save, Download, FileText, RotateCcw, RefreshCw } from 'lucide-react';
 
 const ReportEditor = () => {
     const { analysisData } = useAnalysis();
@@ -31,6 +31,14 @@ const ReportEditor = () => {
         if (analysisData && window.confirm("Are you sure? This will discard your current edits.")) {
             const initialHtml = generateWordHTML(analysisData);
             setEditorContent(initialHtml);
+        }
+    };
+
+    const handleRegenerate = () => {
+        if (analysisData) {
+            console.log("Forcing regeneration with latest API logic");
+            const html = generateWordHTML(analysisData);
+            setEditorContent(html);
         }
     };
 
@@ -79,6 +87,9 @@ const ReportEditor = () => {
                 <div className="flex gap-2">
                     <button onClick={handleReset} className="flex items-center gap-1 px-3 py-2 text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-50 transition-colors">
                         <RotateCcw size={16} /> <span className="hidden sm:inline">Reset</span>
+                    </button>
+                    <button onClick={handleRegenerate} className="flex items-center gap-1 px-3 py-2 text-indigo-600 bg-indigo-50 border border-indigo-200 rounded hover:bg-indigo-100 transition-colors" title="Force Regenerate">
+                        <RefreshCw size={16} /> <span className="hidden sm:inline">Regen V2</span>
                     </button>
                     <button onClick={handleSave} className="flex items-center gap-1 px-3 py-2 text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors">
                         <Save size={16} /> <span className="hidden sm:inline">Save Draft</span>
