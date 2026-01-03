@@ -1,8 +1,52 @@
-fastapi
-uvicorn
-pymupdf 
-pdfplumber 
-sentence-transformers 
-faiss-cpu 
-openai 
-python-docx
+# ============================================================================
+# Core Framework & Server
+# ============================================================================
+fastapi==0.109.0                    # Modern async web framework
+uvicorn[standard]==0.27.0           # ASGI server
+python-multipart==0.0.6             # Form data parsing
+
+# ============================================================================
+# Data Validation & Configuration
+# ============================================================================
+pydantic==2.5.3                     # Data validation and parsing
+pydantic-settings==2.1.0            # Environment settings management
+email-validator==2.1.0              # Email validation
+
+# ============================================================================
+# PDF & Document Processing
+# ============================================================================
+pymupdf==1.23.8                     # PDF text extraction (fitz)
+pdfplumber==0.10.3                 # Advanced PDF parsing and tables
+python-docx==0.8.11                # DOCX file support
+
+# ============================================================================
+# AI & Machine Learning (Optional - for future integration)
+# ============================================================================
+# openai==1.3.8                       # OpenAI API client
+# sentence-transformers==2.2.2        # Semantic embeddings
+# faiss-cpu==1.7.4                    # Vector similarity search (CPU version)
+# numpy==1.24.3                       # Numerical computing
+
+# ============================================================================
+# Authentication & Security
+# ============================================================================
+PyJWT==2.8.1                        # JWT token handling
+bcrypt==4.1.2                       # Password hashing
+cryptography==41.0.7                # Cryptographic operations
+
+# ============================================================================
+# Database (Optional - for future use)
+# ============================================================================
+# sqlalchemy==2.0.23                # ORM
+# psycopg2-binary==2.9.9            # PostgreSQL driver
+# alembic==1.12.1                   # Database migrations
+
+# ============================================================================
+# Logging & Monitoring
+# ============================================================================
+python-json-logger==2.0.7           # JSON structured logging
+
+# Note: Development and testing dependencies are in requirements-dev.txt
+# ============================================================================
+
+python-dotenv==1.0.0                # Environment variable loading
