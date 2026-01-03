@@ -5,6 +5,7 @@ import FileUpload from './components/FileUpload';
 import PDFViewer from './components/PDFViewer';
 import AnalysisDashboard from './components/AnalysisDashboard';
 import SensitivityAnalysis from './components/SensitivityAnalysis';
+import ReportEditor from './components/ReportEditor';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext';
 import { AnalysisProvider, useAnalysis } from './context/AnalysisContext';
@@ -119,7 +120,7 @@ const Analysis = () => {
 
 // Placeholder components for other routes
 // const Dashboard = () => <div className="p-6 text-2xl font-bold">Main Dashboard Placeholder</div>;
-const Reports = () => <div className="p-6 text-2xl font-bold">Financial Reports Placeholder</div>;
+// const Reports = () => <div className="p-6 text-2xl font-bold">Financial Reports Placeholder</div>;
 
 function App() {
   return (
@@ -146,10 +147,10 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/reports" element={
+            <Route path="/editor" element={
               <ProtectedRoute>
                 <Layout>
-                  <Reports />
+                  <ReportEditor />
                 </Layout>
               </ProtectedRoute>
             } />
