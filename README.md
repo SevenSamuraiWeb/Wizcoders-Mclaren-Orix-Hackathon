@@ -148,9 +148,13 @@ npm run preview
 │   └── README.md                  # Frontend documentation
 │
 ├── docs/                          # Project documentation
-│   ├── ARCHITECTURE.md            # Detailed architecture
-│   ├── API.md                     # API documentation
-│   └── SETUP_GUIDE.md             # Development setup guide
+│   ├── ARCHITECTURE.md            # System design & architecture
+│   ├── DEVELOPMENT.md             # Development workflow & setup
+│   ├── QUICKSTART.md              # Quick reference guide
+│   ├── SECURITY.md                # Security practices & policy
+│   ├── CONTRIBUTING.md            # Contribution guidelines
+│   ├── CHANGELOG.md               # Version history
+│   └── REFACTORING_SUMMARY.md     # Refactoring documentation
 │
 ├── scripts/                       # Automation & tooling
 │   ├── setup.sh                   # One-command setup
@@ -161,12 +165,9 @@ npm run preview
 │   └── nginx.conf                 # Production reverse proxy
 │
 ├── .github/workflows/             # CI/CD pipelines
-│   ├── test.yml                   # Test automation
-│   └── deploy.yml                 # Production deployment
+│   ├── backend-ci.yml             # Backend test automation
+│   └── frontend-ci.yml            # Frontend build & lint
 │
-├── SECURITY.md                    # Security policy
-├── CONTRIBUTING.md                # Contributing guidelines
-├── CHANGELOG.md                   # Version history
 └── README.md                      # This file
 ```
 
@@ -182,7 +183,7 @@ npm run preview
 
 ## API Documentation
 
-See [API.md](docs/API.md) for comprehensive API endpoint documentation.
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for comprehensive system architecture and API endpoint documentation.
 
 ### Example Request
 
@@ -222,7 +223,7 @@ npm run lint
 ```
 
 **Pre-commit hooks:**
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions.
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for setup instructions.
 
 ## Security
 
@@ -236,11 +237,11 @@ This project implements security best practices aligned with GitGuardian standar
 - ✅ Dependency scanning via renovate
 - ✅ Regular security audits
 
-**Security Issues:** See [SECURITY.md](SECURITY.md) for responsible disclosure.
+**Security Issues:** See [SECURITY.md](docs/SECURITY.md) for responsible disclosure.
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+We welcome contributions! See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines on:
 - Code style and standards
 - Pull request process
 - Testing requirements
@@ -248,7 +249,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines 
 
 ## Deployment
 
-See [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for production deployment instructions including:
+See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for production deployment instructions including:
 - Docker containerization
 - Kubernetes deployment
 - AWS/Azure cloud deployment
@@ -273,7 +274,7 @@ See [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for production deployment instruc
 **Issue:** `API authentication fails`
 - Solution: Check JWT token expiration; re-login if necessary
 
-For more help, see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) or open an issue.
+For more help, see [DEVELOPMENT.md](docs/DEVELOPMENT.md) for troubleshooting or open an issue.
 
 ## Roadmap
 

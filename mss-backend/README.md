@@ -250,7 +250,7 @@ UPLOAD_DIR=./uploads
 - ✅ Trusted host middleware
 - ✅ Secure error handling
 
-See [SECURITY.md](../SECURITY.md) for detailed security policies.
+See [SECURITY.md](../docs/SECURITY.md) for detailed security policies.
 
 ## Performance
 
@@ -309,7 +309,7 @@ docker run -p 8000:8000 --env-file .env mss-backend
 
 ## Contributing
 
-See [../CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](../docs/CONTRIBUTING.md) for contribution guidelines.
 
 ### Pre-commit Setup
 
