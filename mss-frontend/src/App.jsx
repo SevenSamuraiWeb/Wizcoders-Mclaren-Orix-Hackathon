@@ -4,15 +4,19 @@ import Layout from './components/Layout';
 import FileUpload from './components/FileUpload';
 import PDFViewer from './components/PDFViewer';
 import AnalysisDashboard from './components/AnalysisDashboard';
+import SensitivityAnalysis from './components/SensitivityAnalysis';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext';
+import { AnalysisProvider, useAnalysis } from './context/AnalysisContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 
+
 // Separate Analysis component to keep App.jsx clean
 const Analysis = () => {
+  // Use context instead of local state for data persistence
+  const { analysisData, setAnalysisData } = useAnalysis();
   const [file, setFile] = useState(null);
-  const [analysisData, setAnalysisData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
 
@@ -114,50 +118,52 @@ const Analysis = () => {
 };
 
 // Placeholder components for other routes
-const Dashboard = () => <div className="p-6 text-2xl font-bold">Main Dashboard Placeholder</div>;
+// const Dashboard = () => <div className="p-6 text-2xl font-bold">Main Dashboard Placeholder</div>;
 const Reports = () => <div className="p-6 text-2xl font-bold">Financial Reports Placeholder</div>;
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
+      <AnalysisProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
 
-          {/* Protected Routes */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Layout>
-                <Analysis />
-              </Layout>
-            </ProtectedRoute>
-          } />
+            {/* Protected Routes */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Analysis />
+                </Layout>
+              </ProtectedRoute>
+            } />
 
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </ProtectedRoute>
-          } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Layout>
+                  <SensitivityAnalysis />
+                </Layout>
+              </ProtectedRoute>
+            } />
 
-          <Route path="/reports" element={
-            <ProtectedRoute>
-              <Layout>
-                <Reports />
-              </Layout>
-            </ProtectedRoute>
-          } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Reports />
+                </Layout>
+              </ProtectedRoute>
+            } />
 
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <Layout>
-                <div className="p-6 text-2xl font-bold">Settings Placeholder</div>
-              </Layout>
-            </ProtectedRoute>
-          } />
-        </Routes>
-      </Router>
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Layout>
+                  <div className="p-6 text-2xl font-bold">Settings Placeholder</div>
+                </Layout>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </Router>
+      </AnalysisProvider>
     </AuthProvider>
   );
 }

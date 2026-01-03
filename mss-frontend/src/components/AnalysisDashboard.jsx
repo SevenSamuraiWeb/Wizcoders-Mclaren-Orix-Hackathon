@@ -173,7 +173,7 @@ const AnalysisDashboard = ({ data }) => {
                         <div className="mt-3 pt-3 border-t border-slate-50">
                             <div className="flex flex-wrap gap-2">
                                 {value.pledged_assets.map((asset, i) => (
-                                    <span key={i} className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">#{asset}</span>
+                                    <span key={i} className="text-[13px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">{asset}</span>
                                 ))}
                             </div>
                         </div>
@@ -282,8 +282,8 @@ const AnalysisDashboard = ({ data }) => {
                         onClick={() => setEditMode(!editMode)}
                         className={cn(
                             "flex items-center space-x-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
-                            editMode 
-                                ? "bg-amber-100 text-amber-700 hover:bg-amber-200" 
+                            editMode
+                                ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
                                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         )}
                     >
