@@ -30,7 +30,7 @@ python-docx==0.8.11                # DOCX file support
 # ============================================================================
 # Authentication & Security
 # ============================================================================
-PyJWT==2.8.1                        # JWT token handling
+PyJWT==2.8.0                        # JWT token handling
 bcrypt==4.1.2                       # Password hashing
 cryptography==41.0.7                # Cryptographic operations
 
