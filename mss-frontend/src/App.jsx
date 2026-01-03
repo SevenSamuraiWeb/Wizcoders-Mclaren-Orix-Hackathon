@@ -5,6 +5,9 @@ import FileUpload from './components/FileUpload';
 import PDFViewer from './components/PDFViewer';
 import AnalysisDashboard from './components/AnalysisDashboard';
 import { Loader2 } from 'lucide-react';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
 
 // Separate Analysis component to keep App.jsx clean
 const Analysis = () => {
@@ -67,16 +70,46 @@ const Reports = () => <div className="p-6 text-2xl font-bold">Financial Reports 
 
 function App() {
   return (
-    <Router>
-      <Layout>
+    <AuthProvider>
+      <Router>
         <Routes>
-          <Route path="/" element={<Analysis />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<div className="p-6 text-2xl font-bold">Settings Placeholder</div>} />
+          <Route path="/login" element={<Login />} />
+
+          {/* Protected Routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout>
+                <Analysis />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/reports" element={
+            <ProtectedRoute>
+              <Layout>
+                <Reports />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Layout>
+                <div className="p-6 text-2xl font-bold">Settings Placeholder</div>
+              </Layout>
+            </ProtectedRoute>
+          } />
         </Routes>
-      </Layout>
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 }
 
