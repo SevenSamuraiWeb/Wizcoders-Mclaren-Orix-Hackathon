@@ -283,4 +283,10 @@ curl -X POST http://localhost:8000/generate_memo \
 
 **Project Team:** Wizcoders for McLaren Strategic Solutions × Orixx Hackathon
 
+## Deployment Link : 
+- https://wizcoders-mclaren-orix-hackathon.vercel.app/
+
+## PPT
+- Uploaded to the repository as **Credit-Memos-Slow-Risky-Untracked**
+
 
