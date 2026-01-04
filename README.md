@@ -283,4 +283,4 @@ curl -X POST http://localhost:8000/generate_memo \
 
 **Project Team:** Wizcoders for McLaren Strategic Solutions × Orixx Hackathon
 
-*
+
