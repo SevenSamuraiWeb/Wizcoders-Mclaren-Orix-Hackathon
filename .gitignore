@@ -43,65 +43,19 @@ venv/
 ENV/
 env/
 .env
-.env.local
-.env.*.local
 .venv
 pip-log.txt
 pip-delete-this-directory.txt
 
 # IDEs and Editors
 .vscode/
-.vscode/settings.json
-.vscode/launch.json
-.vscode/extensions.json
 .idea/
 *.swp
 *.swo
-*~
 .DS_Store
-.project
-.settings/
-*.sublime-project
-*.sublime-workspace
-.vim
-
-# Testing & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
-.hypothesis/
-test-results/
-coverage.xml
-
-# Logs
-logs/
-*.log.*
-
-# Document Uploads & Temporary Data
-uploads/
-temp/
-tmp/
-*.pdf
-*.docx
-*.doc
-!example_*.pdf
-!example_*.docx
 
 # Misc
 .gemini/
 .agent/
-.tmp/
-.cache/
-
-# macOS
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Windows (specific)
-Thumbs.db
-
-# Build output
-dist-ssr/
+temp/
+tmp/

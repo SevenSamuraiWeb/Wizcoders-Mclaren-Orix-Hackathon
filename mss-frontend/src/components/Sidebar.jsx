@@ -12,7 +12,7 @@ const Sidebar = () => {
     const menuItems = [
         { path: '/', label: 'Analysis', icon: FileText },
         { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { path: '/reports', label: 'Reports', icon: PieChart },
+        { path: '/editor', label: 'Editor', icon: PieChart },
         { path: '/settings', label: 'Settings', icon: Settings },
     ];
 
