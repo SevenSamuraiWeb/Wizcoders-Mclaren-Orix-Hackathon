@@ -289,4 +289,7 @@ curl -X POST http://localhost:8000/generate_memo \
 ## PPT
 - Uploaded to the repository as **Credit-Memos-Slow-Risky-Untracked**
 
+## Development Artifacts: Videos and Screenshots from the Tool Development Journey
+- https://drive.google.com/drive/folders/1Z19uG2URfpv6d7t8pJGnu4IPdlkTMvE3
+
 
